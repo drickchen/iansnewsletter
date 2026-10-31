@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>陳恩英文的教室札記</title>
+  <meta name="description" content="陳恩英文討論式小班，每個月底寫給家長的一封信。">
+  <meta name="theme-color" content="#efe3cf">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="陳恩英文的教室札記">
+  <meta property="og:title" content="陳恩英文的教室札記">
+  <meta property="og:description" content="每個月底，寫給家長的一封信。">
+  <meta property="og:image" content="https://drickchen.github.io/iansnewsletter/assets/og.png">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400;1,500&family=Noto+Serif+TC:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="page">
+    <main class="home">
+      <p class="home-kicker">Letters from the Classroom</p>
+      <h1 class="home-title"><small>陳恩英文的</small>教室札記</h1>
+      <div class="paper-ornament" aria-hidden="true" id="orn"></div>
+      <p class="home-sub">每個月底，寫給家長的一封信<br>請點選孩子所在的班級</p>
+      <ul class="class-grid" id="grid"></ul>
+    </main>
+    <footer class="site-foot"><span>陳恩英文</span><i></i><span>討論式小班英文</span></footer>
+  </div>
+  <script src="assets/common.js"></script>
+  <script>
+    (function () {
+      var grid = document.getElementById('grid');
+      document.getElementById('orn').innerHTML = CE.SPRIG;
+      grid.innerHTML = CE.CLASSES.map(function (c, i) {
+        return '<li><a class="class-card" href="' + c.slug + '/" style="--accent:' + c.color + ';animation-delay:' + (0.6 + i * 0.09) + 's">' +
+          '<span class="cc-seal">' + c.day + '</span>' +
+          '<span class="cc-name">' + c.name + '</span>' +
+          '<span class="cc-en">' + c.en + '</span>' +
+          '<span class="cc-latest" id="latest-' + c.slug + '">　</span>' +
+          '</a></li>';
+      }).join('');
+      CE.CLASSES.forEach(function (c) {
+        fetch('data/' + c.slug + '.json?t=' + Date.now(), { cache: 'no-store' })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            var L = CE.sortLetters(d.letters)[0];
+            document.getElementById('latest-' + c.slug).textContent = L ? CE.monthOnlyCN(L.month) + '號・' + (L.title || '') : '第一封信，月底寄出';
+          })
+          .catch(function () {});
+      });
+    })();
+  </script>
+</body>
+</html>
