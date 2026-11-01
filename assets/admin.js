@@ -151,9 +151,15 @@
     F.signature.value = L.signature || '';
     renderPreview();
   }
+  // 月底寫、月初才發佈的信，預設算在上個月（每月 10 號以前）
+  function defaultMonth() {
+    var d = new Date();
+    if (d.getDate() <= 10) d.setDate(0);
+    return d.getFullYear() + '-' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1);
+  }
   function blank() {
     return {
-      month: today().slice(0, 7), date: today(), title: '', body: '',
+      month: defaultMonth(), date: today(), title: '', body: '',
       greeting: defaults.greeting || CE.SITE.defaultGreeting,
       signature: defaults.signature || CE.SITE.defaultSignature
     };
