@@ -18,7 +18,15 @@
   app.innerHTML =
     '<header class="masthead">' +
       '<a class="brand" href="' + root + '">陳恩英文的<b>教室札記</b></a>' +
-      '<span class="masthead-class"><i></i>' + esc(cls.name) + '</span>' +
+      '<span class="masthead-right">' +
+        '<button type="button" class="sound-toggle" id="soundBtn" aria-pressed="true" aria-label="開信音效：開" title="開信音效">' +
+          '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>' +
+            '<path class="wave" d="M15.5 9a4 4 0 0 1 0 6"/><path class="wave" d="M18 6.5a7.5 7.5 0 0 1 0 11"/>' +
+            '<path class="mute" d="M16 9.5l5 5M21 9.5l-5 5"/>' +
+          '</svg></button>' +
+        '<span class="masthead-class"><i></i>' + esc(cls.name) + '</span>' +
+      '</span>' +
     '</header>' +
     (mode !== 'live' ? '<div class="mode-ribbon">' +
       (mode === 'preview' ? '預覽模式：這封信還沒發佈，家長看不到' : '示範信：用來感受版面與拆信動畫') +
@@ -57,6 +65,42 @@
   var current = null;
   var opened = false;
   var timers = [];
+
+  // 開信音效：輕觸信封時播放，可在右上角關閉（記在這台裝置上）
+  var soundBtn = document.getElementById('soundBtn');
+  var soundOn = localStorage.getItem('ce-sound') !== 'off';
+  var sfx = null;
+  function getSfx() {
+    if (!sfx && window.Audio) {
+      sfx = new Audio(root + 'assets/open-letter.mp3');
+      sfx.preload = 'auto';
+      sfx.volume = 0.75;
+    }
+    return sfx;
+  }
+  function renderSound() {
+    soundBtn.setAttribute('aria-pressed', String(soundOn));
+    soundBtn.setAttribute('aria-label', '開信音效：' + (soundOn ? '開' : '關'));
+    soundBtn.classList.toggle('is-off', !soundOn);
+  }
+  function playSfx() {
+    if (!soundOn) return;
+    var a = getSfx();
+    if (!a) return;
+    try {
+      a.currentTime = 0;
+      var p = a.play();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
+  }
+  soundBtn.addEventListener('click', function () {
+    soundOn = !soundOn;
+    localStorage.setItem('ce-sound', soundOn ? 'on' : 'off');
+    renderSound();
+    if (!soundOn && sfx) sfx.pause();
+  });
+  renderSound();
+  if (soundOn) getSfx();
 
   function resolveImage(u) {
     if (images[u]) return images[u];
@@ -103,6 +147,7 @@
   function open() {
     if (opened || !current) return;
     opened = true;
+    playSfx();
     if (reduced) { showReading(); return; }
     stage.classList.add('is-opening');
     timers.push(setTimeout(function () { stage.classList.add('is-leaving'); }, 2250));

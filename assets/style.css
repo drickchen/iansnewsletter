@@ -80,6 +80,24 @@ button { font-family: inherit; }
   border-radius: 999px;
   background: rgba(253, 248, 239, .55);
 }
+.masthead-right { display: inline-flex; align-items: center; gap: 10px; }
+.sound-toggle {
+  display: grid; place-items: center;
+  width: 36px; height: 36px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(253, 248, 239, .55);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color .3s, background .3s;
+  -webkit-tap-highlight-color: transparent;
+}
+.sound-toggle:hover { color: var(--accent-ink); background: var(--paper); }
+.sound-toggle .mute { display: none; }
+.sound-toggle.is-off { color: var(--ink-faint); }
+.sound-toggle.is-off .wave { display: none; }
+.sound-toggle.is-off .mute { display: inline; }
 .masthead-class i {
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--accent);
