@@ -175,21 +175,23 @@
   // 文字漸入：進入畫面的段落依序浮現
   function reveal(container, opts) {
     opts = opts || {};
-    var stagger = opts.stagger || 120;
+    var stagger = opts.stagger || 110;
     var els = Array.prototype.slice.call(container.querySelectorAll('.reveal'));
     if (reducedMotion || opts.instant || !('IntersectionObserver' in global)) {
       els.forEach(function (e) { e.style.transitionDelay = '0ms'; e.classList.add('in'); });
       return;
     }
+    // 以「段落頂端進入畫面下方約八成五處」為準，不論段落多長都在同一個位置開始浮現。
+    // 手機上一段常比整個螢幕還高，用比例門檻會等到段落已經露出一大截空白才觸發。
     var io = new IntersectionObserver(function (entries) {
       var vis = entries.filter(function (e) { return e.isIntersecting; })
         .sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; });
       vis.forEach(function (e, i) {
-        e.target.style.transitionDelay = Math.min(i * stagger, 1400) + 'ms';
+        e.target.style.transitionDelay = Math.min(i * stagger, 600) + 'ms';
         e.target.classList.add('in');
         io.unobserve(e.target);
       });
-    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.08 });
+    }, { rootMargin: '0px 0px -15% 0px', threshold: 0 });
     els.forEach(function (e) { io.observe(e); });
   }
 

@@ -470,11 +470,13 @@ button { font-family: inherit; }
 /* 漸入 */
 .reveal {
   opacity: 0;
-  transform: translateY(14px);
-  filter: blur(3px);
-  transition: opacity 1.1s ease, transform 1.1s cubic-bezier(.2, .7, .2, 1), filter 1.1s ease;
+  transform: translate3d(0, 18px, 0);
+  transition: opacity 1.2s ease, transform 1.2s cubic-bezier(.2, .7, .2, 1);
 }
-.reveal.in { opacity: 1; transform: none; filter: none; }
+.reveal.in { opacity: 1; transform: none; }
+/* 模糊只用在標題這類短字上；整段長文加模糊，手機繪圖負擔太重，動畫會直接跳過 */
+.paper-head .reveal { filter: blur(3px); transition-property: opacity, transform, filter; }
+.paper-head .reveal.in { filter: none; }
 .paper-title.reveal { letter-spacing: .3em; }
 .paper-title.reveal.in { letter-spacing: .1em; transition-property: opacity, transform, filter, letter-spacing; transition-duration: 1.6s; }
 

@@ -67,40 +67,80 @@
   var timers = [];
 
   // 開信音效：輕觸信封時播放，可在右上角關閉（記在這台裝置上）
+  // 用 Web Audio 播放並宣告為 ambient，讓音效和手機上正在播的音樂混在一起，不把音樂暫停。
   var soundBtn = document.getElementById('soundBtn');
   var soundOn = localStorage.getItem('ce-sound') !== 'off';
-  var sfx = null;
-  function getSfx() {
-    if (!sfx && window.Audio) {
-      sfx = new Audio(root + 'assets/open-letter.mp3');
-      sfx.preload = 'auto';
-      sfx.volume = 0.75;
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var actx = null, gain = null, sfxNode = null, bytesP = null, bufferP = null;
+  try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) {}
+
+  function loadBytes() {
+    if (!bytesP) {
+      bytesP = fetch(root + 'assets/open-letter.mp3')
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+        .catch(function () { bytesP = null; return null; });
     }
-    return sfx;
+    return bytesP;
+  }
+  function ensureCtx() {
+    if (!AC) return null;
+    try {
+      if (!actx) {
+        actx = new AC();
+        gain = actx.createGain();
+        gain.gain.value = 0.75;
+        gain.connect(actx.destination);
+      }
+      if (actx.state === 'suspended' && actx.resume) actx.resume();
+      // 舊版 iOS 需要在觸控當下播一段無聲的聲音才會解鎖
+      var unlock = actx.createBufferSource();
+      unlock.buffer = actx.createBuffer(1, 1, 22050);
+      unlock.connect(actx.destination);
+      unlock.start(0);
+    } catch (e) { return null; }
+    return actx;
+  }
+  function getBuffer() {
+    if (!bufferP) {
+      bufferP = loadBytes().then(function (ab) {
+        if (!ab || !actx) return null;
+        return new Promise(function (resolve, reject) {
+          var r = actx.decodeAudioData(ab.slice(0), resolve, reject);
+          if (r && r.then) r.then(resolve, reject);
+        });
+      }).catch(function () { bufferP = null; return null; });
+    }
+    return bufferP;
+  }
+  function stopSfx() {
+    if (sfxNode) { try { sfxNode.stop(); } catch (e) {} sfxNode = null; }
+  }
+  function playSfx() {
+    if (!soundOn || !ensureCtx()) return;
+    getBuffer().then(function (buf) {
+      if (!buf || !soundOn) return;
+      stopSfx();
+      var src = actx.createBufferSource();
+      src.buffer = buf;
+      src.connect(gain);
+      src.onended = function () { if (sfxNode === src) sfxNode = null; };
+      src.start(0);
+      sfxNode = src;
+    });
   }
   function renderSound() {
     soundBtn.setAttribute('aria-pressed', String(soundOn));
     soundBtn.setAttribute('aria-label', '開信音效：' + (soundOn ? '開' : '關'));
     soundBtn.classList.toggle('is-off', !soundOn);
   }
-  function playSfx() {
-    if (!soundOn) return;
-    var a = getSfx();
-    if (!a) return;
-    try {
-      a.currentTime = 0;
-      var p = a.play();
-      if (p && p.catch) p.catch(function () {});
-    } catch (e) {}
-  }
   soundBtn.addEventListener('click', function () {
     soundOn = !soundOn;
     localStorage.setItem('ce-sound', soundOn ? 'on' : 'off');
     renderSound();
-    if (!soundOn && sfx) sfx.pause();
+    if (!soundOn) stopSfx();
   });
   renderSound();
-  if (soundOn) getSfx();
+  if (soundOn && AC) loadBytes();
 
   function resolveImage(u) {
     if (images[u]) return images[u];
@@ -190,6 +230,9 @@
     window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
   });
 
+  function warmUp() { if (soundOn && !opened && ensureCtx()) getBuffer(); }
+  envelope.addEventListener('pointerdown', warmUp);
+  envelope.addEventListener('touchstart', warmUp, { passive: true });
   envelope.addEventListener('click', open);
   envelope.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
